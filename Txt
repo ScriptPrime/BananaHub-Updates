@@ -1,16 +1,16 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local TweenService = game:GetService("TweenService")
 
--- Xóa bản cũ tránh trùng lặp UI
-if PlayerGui:FindFirstChild("TwixHub_Fixed_v3") then
-    PlayerGui.TwixHub_Fixed_v3:Destroy()
-end
+-- Xóa triệt để các bản lỗi cũ tránh đè UI chìm
+if PlayerGui:FindFirstChild("TwixHub_Final_Mobile") then PlayerGui.TwixHub_Final_Mobile:Destroy() end
 
 local SG = Instance.new("ScreenGui")
-SG.Name = "TwixHub_Fixed_v3"
+SG.Name = "TwixHub_Final_Mobile"
 SG.Parent = PlayerGui
 SG.ResetOnSpawn = false
+SG.DisplayOrder = 999 
 
 local function round(parent, radius)
     local corner = Instance.new("UICorner")
@@ -20,16 +20,139 @@ local function round(parent, radius)
 end
 
 -- ====================================================================
--- 1. THANH TÍM PHÍA TRÊN (TOP BAR)
+-- 1. HÀM TẠO THÔNG BÁO (NOTIFICATION SYSTEM)
+-- ====================================================================
+local function showNotification(title, desc, leftIconType, customIcon)
+    local Notif = Instance.new("Frame")
+    Notif.Name = "CustomNotification"
+    Notif.Size = UDim2.new(0, 260, 0, 56)
+    Notif.Position = UDim2.new(1, 280, 0.75, 0)
+    Notif.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+    Notif.BorderSizePixel = 0
+    Notif.ZIndex = 100 
+    Notif.Parent = SG
+    round(Notif, 14)
+
+    local LeftZone = Instance.new("Frame")
+    LeftZone.Size = UDim2.new(0, 40, 1, 0)
+    LeftZone.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    LeftZone.BorderSizePixel = 0
+    LeftZone.ZIndex = 101
+    LeftZone.Visible = (leftIconType ~= nil)
+    LeftZone.Parent = Notif
+    
+    local LeftCorner = Instance.new("UICorner")
+    LeftCorner.CornerRadius = UDim.new(0, 14)
+    LeftCorner.Parent = LeftZone
+    
+    local Cover = Instance.new("Frame")
+    Cover.Size = UDim2.new(0, 10, 1, 0)
+    Cover.Position = UDim2.new(1, -10, 0, 0)
+    Cover.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Cover.BorderSizePixel = 0
+    Cover.ZIndex = 101
+    Cover.Parent = LeftZone
+
+    if leftIconType == "image" then
+        local Img = Instance.new("ImageLabel")
+        Img.Size = UDim2.new(0, 18, 0, 18)
+        Img.Position = UDim2.new(0.5, -9, 0.5, -9)
+        Img.BackgroundTransparency = 1
+        Img.Image = customIcon
+        Img.ZIndex = 102
+        Img.Parent = LeftZone
+    elseif leftIconType == "text" then
+        local Txt = Instance.new("TextLabel")
+        Txt.Size = UDim2.new(0, 18, 0, 18)
+        Txt.Position = UDim2.new(0.5, -9, 0.5, -9)
+        Txt.BackgroundTransparency = 1
+        Txt.Text = customIcon
+        Txt.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Txt.Font = Enum.Font.GothamBold
+        Txt.TextSize = 14
+        Txt.ZIndex = 102
+        Txt.Parent = LeftZone
+    end
+
+    local N_Title = Instance.new("TextLabel")
+    N_Title.Size = UDim2.new(0, 170, 0, 16)
+    N_Title.Position = UDim2.new(0, (leftIconType and 50 or 16), 0, 10)
+    N_Title.BackgroundTransparency = 1
+    N_Title.Text = title
+    N_Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    N_Title.Font = Enum.Font.GothamBold
+    N_Title.TextSize = 12
+    N_Title.TextXAlignment = Enum.TextXAlignment.Left
+    N_Title.ZIndex = 101
+    N_Title.Parent = Notif
+
+    local N_Desc = Instance.new("TextLabel")
+    N_Desc.Size = UDim2.new(0, 170, 0, 14)
+    N_Desc.Position = UDim2.new(0, (leftIconType and 50 or 16), 0, 28)
+    N_Desc.BackgroundTransparency = 1
+    N_Desc.Text = desc
+    N_Desc.TextColor3 = Color3.fromRGB(170, 170, 175)
+    N_Desc.Font = Enum.Font.GothamMedium
+    N_Desc.TextSize = 10
+    N_Desc.TextXAlignment = Enum.TextXAlignment.Left
+    N_Desc.ZIndex = 101
+    N_Desc.Parent = Notif
+
+    local C_Btn = Instance.new("TextButton")
+    C_Btn.Size = UDim2.new(0, 14, 0, 14)
+    C_Btn.Position = UDim2.new(1, -22, 0, 10)
+    C_Btn.BackgroundTransparency = 1
+    C_Btn.Text = "✕"
+    C_Btn.TextColor3 = Color3.fromRGB(150, 150, 155)
+    C_Btn.TextSize = 11
+    C_Btn.Font = Enum.Font.GothamBold
+    C_Btn.ZIndex = 102
+    C_Btn.Parent = Notif
+
+    local ProgressBar = Instance.new("Frame")
+    ProgressBar.Size = UDim2.new(1, 0, 0, 2.5)
+    ProgressBar.Position = UDim2.new(0, 0, 1, -2.5)
+    ProgressBar.BackgroundColor3 = Color3.fromRGB(168, 85, 247)
+    ProgressBar.BorderSizePixel = 0
+    ProgressBar.ZIndex = 101
+    ProgressBar.Parent = Notif
+    round(ProgressBar, 1)
+
+    TweenService:Create(Notif, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(1, -275, 0.75, 0)}):Play()
+
+    local barTween = TweenService:Create(ProgressBar, TweenInfo.new(3, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 2.5)})
+    barTween:Play()
+
+    C_Btn.MouseButton1Click:Connect(function() Notif:Destroy() end)
+
+    barTween.Completed:Connect(function()
+        local fadeTween = TweenService:Create(Notif, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            BackgroundTransparency = 1,
+            Position = UDim2.new(1, 280, 0.75, 0)
+        })
+        TweenService:Create(LeftZone, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(Cover, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(N_Title, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+        TweenService:Create(N_Desc, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+        TweenService:Create(C_Btn, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+        
+        fadeTween:Play()
+        fadeTween.Completed:Connect(function() Notif:Destroy() end)
+    end)
+end
+
+-- ====================================================================
+-- 2. THANH NHỎ MÀU TÍM PHÍA TRÊN (TOP BAR)
 -- ====================================================================
 local TopBar = Instance.new("Frame")
 TopBar.Name = "TopBar"
 TopBar.Size = UDim2.new(0, 270, 0, 32)
-TopBar.Position = UDim2.new(0.5, -135, 0, 10)
-TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-TopBar.BorderSizePixel = 0
+TopBar.Position = UDim2.new(0.5, -135, 0, 15)
+TopBar.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+TopBar.BackgroundTransparency = 0.25
 TopBar.Active = true
 TopBar.Draggable = true
+TopBar.ZIndex = 5
 TopBar.Parent = SG
 round(TopBar, 16)
 
@@ -40,171 +163,161 @@ TopBarStroke.Parent = TopBar
 
 local OpenBtn = Instance.new("TextButton")
 OpenBtn.Size = UDim2.new(0, 16, 0, 16)
-OpenBtn.Position = UDim2.new(0, 35, 0.5, -8)
+OpenBtn.Position = UDim2.new(0, 15, 0.5, -8)
 OpenBtn.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
 OpenBtn.Text = ""
+OpenBtn.ZIndex = 6
 OpenBtn.Parent = TopBar
 round(OpenBtn, 8)
 
 local TitleText = Instance.new("TextLabel")
 TitleText.Size = UDim2.new(0, 180, 1, 0)
-TitleText.Position = UDim2.new(0, 65, 0, 0)
+TitleText.Position = UDim2.new(0, 45, 0, 0)
 TitleText.BackgroundTransparency = 1
 TitleText.Text = "Blox Fruits | Trade Script v1"
 TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleText.TextSize = 11
 TitleText.Font = Enum.Font.GothamBold
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
+TitleText.ZIndex = 6
 TitleText.Parent = TopBar
 
 -- ====================================================================
--- 2. BẢNG MENU CHÍNH (MAIN MENU) - Hiện rõ nền, không xuyên thấu
+-- 3. BẢNG MENU CHÍNH (MAIN MENU)
 -- ====================================================================
 local MainMenu = Instance.new("Frame")
 MainMenu.Name = "MainMenu"
-MainMenu.Size = UDim2.new(0, 420, 0, 260)
-MainMenu.Position = UDim2.new(0.5, -210, 0.5, -130)
-MainMenu.BackgroundColor3 = Color3.fromRGB(18, 18, 22) -- Nền tối rõ ràng
-MainMenu.BorderSizePixel = 0
-MainMenu.Visible = true
+MainMenu.Size = UDim2.new(0, 420, 0, 230)
+MainMenu.Position = UDim2.new(0.5, -210, 0.5, -115)
+MainMenu.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+MainMenu.BackgroundTransparency = 0.15
 MainMenu.Active = true
 MainMenu.Draggable = true
+MainMenu.ZIndex = 2
 MainMenu.Parent = SG
-round(MainMenu, 11)
+round(MainMenu, 12)
 
 local UserIconMain = Instance.new("ImageLabel")
 UserIconMain.Size = UDim2.new(0, 14, 0, 14)
-UserIconMain.Position = UDim2.new(0, 14, 0, 12)
+UserIconMain.Position = UDim2.new(0, 12, 0, 12)
 UserIconMain.BackgroundTransparency = 1
 UserIconMain.Image = "rbxassetid://6031729013"
+UserIconMain.ZIndex = 3
 UserIconMain.Parent = MainMenu
 
 local TitleMain = Instance.new("TextLabel")
-TitleMain.Size = UDim2.new(0, 200, 0, 14)
-TitleMain.Position = UDim2.new(0, 36, 0, 10)
+TitleMain.Size = UDim2.new(0, 180, 0, 14)
+TitleMain.Position = UDim2.new(0, 32, 0, 10)
 TitleMain.BackgroundTransparency = 1
 TitleMain.Text = "Blox Fruits | Trade Script v1"
 TitleMain.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleMain.TextSize = 11
 TitleMain.Font = Enum.Font.GothamBold
 TitleMain.TextXAlignment = Enum.TextXAlignment.Left
+TitleMain.ZIndex = 3
 TitleMain.Parent = MainMenu
 
-local SubTitleMain = Instance.new("TextLabel")
-SubTitleMain.Size = UDim2.new(0, 200, 0, 12)
-SubTitleMain.Position = UDim2.new(0, 36, 0, 24)
-SubTitleMain.BackgroundTransparency = 1
-SubTitleMain.Text = "Created by: Twix Hub"
-SubTitleMain.TextColor3 = Color3.fromRGB(150, 150, 155)
-SubTitleMain.TextSize = 9
-SubTitleMain.Font = Enum.Font.GothamMedium
-SubTitleMain.TextXAlignment = Enum.TextXAlignment.Left
-SubTitleMain.Parent = MainMenu
+local NinjaLogoFrame = Instance.new("Frame")
+NinjaLogoFrame.Size = UDim2.new(0, 24, 0, 24)
+NinjaLogoFrame.Position = UDim2.new(0, 210, 0, 8)
+NinjaLogoFrame.BackgroundColor3 = Color3.fromRGB(14, 18, 26)
+NinjaLogoFrame.ZIndex = 3
+NinjaLogoFrame.Parent = MainMenu
+round(NinjaLogoFrame, 6)
+
+local NinjaStroke = Instance.new("UIStroke")
+NinjaStroke.Thickness = 1
+NinjaStroke.Color = Color3.fromRGB(59, 130, 246)
+NinjaStroke.Parent = NinjaLogoFrame
+
+local NinjaIcon = Instance.new("ImageLabel")
+NinjaIcon.Size = UDim2.new(0, 18, 0, 18)
+NinjaIcon.Position = UDim2.new(0.5, -9, 0.5, -9)
+NinjaIcon.BackgroundTransparency = 1
+NinjaIcon.Image = "rbxassetid://10604101103"
+NinjaIcon.ZIndex = 4
+NinjaIcon.Parent = NinjaLogoFrame
 
 local CloseMainBtn = Instance.new("TextButton")
-CloseMainBtn.Size = UDim2.new(0, 15, 0, 25)
+CloseMainBtn.Size = UDim2.new(0, 20, 0, 20)
 CloseMainBtn.Position = UDim2.new(1, -30, 0, 10)
 CloseMainBtn.BackgroundTransparency = 1
 CloseMainBtn.Text = "✕"
 CloseMainBtn.TextColor3 = Color3.fromRGB(150, 150, 155)
-CloseMainBtn.TextSize = 11
+CloseMainBtn.TextSize = 12
 CloseMainBtn.Font = Enum.Font.GothamBold
+CloseMainBtn.ZIndex = 3
 CloseMainBtn.Parent = MainMenu
 
 CloseMainBtn.MouseButton1Click:Connect(function() MainMenu.Visible = false end)
 OpenBtn.MouseButton1Click:Connect(function() MainMenu.Visible = not MainMenu.Visible end)
 
--- Logo Ninja nằm góc trên bên phải (Khoanh xanh dương nhỏ)
-local NinjaLogoFrame = Instance.new("Frame")
-NinjaLogoFrame.Size = UDim2.new(0, 36, 0, 36)
-NinjaLogoFrame.Position = UDim2.new(0, 150, 0, 15)
-NinjaLogoFrame.BackgroundColor3 = Color3.fromRGB(25, 30, 40)
-NinjaLogoFrame.Parent = MainMenu
-round(NinjaLogoFrame, 8)
-
-local NinjaStroke = Instance.new("UIStroke")
-NinjaStroke.Thickness = 1.5
-NinjaStroke.Color = Color3.fromRGB(59, 130, 246)
-NinjaStroke.Parent = NinjaLogoFrame
-
-local NinjaIcon = Instance.new("ImageLabel")
-NinjaIcon.Size = UDim2.new(0, 26, 0, 26)
-NinjaIcon.Position = UDim2.new(0.5, -13, 0.5, -13)
-NinjaIcon.BackgroundTransparency = 1
-NinjaIcon.Image = "rbxassetid://10604101103"
-NinjaIcon.Parent = NinjaLogoFrame
-
 -- ====================================================================
--- SIDEBAR BÊN TRÁI
+-- 4. BẢNG BÊN TRÁI (SIDEBAR)
 -- ====================================================================
-local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 140, 1, -55)
-Sidebar.Position = UDim2.new(0, 0, 0, 55)
-Sidebar.BackgroundTransparency = 1
-Sidebar.Parent = MainMenu
-
 local TabTrade = Instance.new("Frame")
-TabTrade.Size = UDim2.new(0, 125, 0, 30)
-TabTrade.Position = UDim2.new(0, 8, 0, 5)
+TabTrade.Size = UDim2.new(0, 130, 0, 32)
+TabTrade.Position = UDim2.new(0, 12, 0, 45)
 TabTrade.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-TabTrade.BackgroundTransparency = 0.93
-TabTrade.Parent = Sidebar
+TabTrade.BackgroundTransparency = 0.92
+TabTrade.ZIndex = 3
+TabTrade.Parent = MainMenu
 round(TabTrade, 6)
 
 local TradeText = Instance.new("TextLabel")
-TradeText.Size = UDim2.new(1, -30, 1, 0)
-TradeText.Position = UDim2.new(0, 32, 0, 0)
+TradeText.Size = UDim2.new(1, -35, 1, 0)
+TradeText.Position = UDim2.new(0, 35, 0, 0)
 TradeText.BackgroundTransparency = 1
 TradeText.Text = "Trao đổi"
 TradeText.TextColor3 = Color3.fromRGB(255, 255, 255)
 TradeText.Font = Enum.Font.GothamBold
 TradeText.TextSize = 10
 TradeText.TextXAlignment = Enum.TextXAlignment.Left
+TradeText.ZIndex = 4
 TradeText.Parent = TabTrade
 
 local TradeIcon = Instance.new("ImageLabel")
-TradeIcon.Size = UDim2.new(0, 13, 0, 13)
-TradeIcon.Position = UDim2.new(0, 10, 0.5, -6.5)
+TradeIcon.Size = UDim2.new(0, 14, 0, 14)
+TradeIcon.Position = UDim2.new(0, 12, 0.5, -7)
 TradeIcon.BackgroundTransparency = 1
 TradeIcon.Image = "rbxassetid://6034287525"
+TradeIcon.ZIndex = 4
 TradeIcon.Parent = TabTrade
 
 local RedButton = Instance.new("TextButton")
-RedButton.Size = UDim2.new(0, 125, 0, 30)
-RedButton.Position = UDim2.new(0, 8, 0, 40)
+RedButton.Size = UDim2.new(0, 130, 0, 32)
+RedButton.Position = UDim2.new(0, 12, 0, 85)
 RedButton.BackgroundColor3 = Color3.fromRGB(220, 38, 38)
 RedButton.Text = "     Alert System"
 RedButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 RedButton.Font = Enum.Font.GothamBold
 RedButton.TextSize = 10
 RedButton.TextXAlignment = Enum.TextXAlignment.Left
-RedButton.Parent = Sidebar
+RedButton.ZIndex = 3
+RedButton.Parent = MainMenu
 round(RedButton, 6)
 
--- ====================================================================
--- KHU VỰC PHẢI - CHỨA CÁC CARD TRONG KHOANH TRÒN VÀNG (Hiện rõ, không mờ)
--- ====================================================================
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Size = UDim2.new(0, 255, 0, 185)
-ContentFrame.Position = UDim2.new(0, 150, 0, 60) -- Đặt chính xác tâm khoảnh tròn vàng
-ContentFrame.BackgroundTransparency = 1          -- Khung chứa vô hình để không đè nền chính
-ContentFrame.Parent = MainMenu
+-- Thay đổi tên thành Player ở Alert System
+RedButton.MouseButton1Click:Connect(function()
+    showNotification("TRADE DETECTED", "Now trading with: Player", "image", "rbxassetid://6035063174")
+end)
 
-local UIList = Instance.new("UIListLayout")
-UIList.Spacing = UDim.new(0, 6) -- Căn khoảng cách giữa các card đều đặn
-UIList.Parent = ContentFrame
-
-local function createFeatureCard(name, desc, iconId, isTextIcon)
+-- ====================================================================
+-- 5. HÀM TẠO CARD TÍNH NĂNG (ĐỊNH VỊ FIXED TRÊN MOBILE)
+-- ====================================================================
+local function createFeatureCard(name, desc, iconId, isTextIcon, positionY, onClickFunc)
     local Card = Instance.new("Frame")
-    Card.Size = UDim2.new(1, 0, 0, 40)
-    Card.BackgroundColor3 = Color3.fromRGB(30, 30, 35) -- Màu xám đậm hiện rõ ràng không lo xuyên thấu
+    Card.Size = UDim2.new(0, 250, 0, 38)
+    Card.Position = UDim2.new(0, 155, 0, positionY)
+    Card.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+    Card.BackgroundTransparency = 0.4
     Card.BorderSizePixel = 0
-    Card.Parent = ContentFrame
+    Card.ZIndex = 10 
+    Card.Parent = MainMenu
     round(Card, 8)
 
     local T_Name = Instance.new("TextLabel")
-    T_Name.Size = UDim2.new(0, 160, 0, 16)
+    T_Name.Size = UDim2.new(1, -40, 0, 16)
     T_Name.Position = UDim2.new(0, 12, 0, 4)
     T_Name.BackgroundTransparency = 1
     T_Name.Text = name
@@ -212,53 +325,63 @@ local function createFeatureCard(name, desc, iconId, isTextIcon)
     T_Name.Font = Enum.Font.GothamBold
     T_Name.TextSize = 10
     T_Name.TextXAlignment = Enum.TextXAlignment.Left
+    T_Name.ZIndex = 11
     T_Name.Parent = Card
 
     local T_Desc = Instance.new("TextLabel")
-    T_Desc.Size = UDim2.new(0, 200, 0, 14)
+    T_Desc.Size = UDim2.new(1, -40, 0, 14)
     T_Desc.Position = UDim2.new(0, 12, 0, 18)
     T_Desc.BackgroundTransparency = 1
     T_Desc.Text = desc
-    T_Desc.TextColor3 = Color3.fromRGB(160, 160, 165)
+    T_Desc.TextColor3 = Color3.fromRGB(145, 145, 150)
     T_Desc.Font = Enum.Font.Gotham
     T_Desc.TextSize = 8
     T_Desc.TextXAlignment = Enum.TextXAlignment.Left
+    T_Desc.ZIndex = 11
     T_Desc.Parent = Card
 
     local RightIcon
     if isTextIcon then
         RightIcon = Instance.new("TextLabel")
         RightIcon.Text = iconId
-        RightIcon.TextColor3 = Color3.fromRGB(180, 180, 185)
-        RightIcon.TextSize = 12
+        RightIcon.TextColor3 = Color3.fromRGB(150, 150, 155)
+        RightIcon.TextSize = 11
         RightIcon.Font = Enum.Font.GothamBold
     else
         RightIcon = Instance.new("ImageLabel")
         RightIcon.Image = iconId
-        RightIcon.ImageColor3 = Color3.fromRGB(180, 180, 185)
+        RightIcon.ImageColor3 = Color3.fromRGB(150, 150, 155)
     end
     RightIcon.Size = UDim2.new(0, 14, 0, 14)
     RightIcon.Position = UDim2.new(1, -24, 0.5, -7)
     RightIcon.BackgroundTransparency = 1
+    RightIcon.ZIndex = 11
     RightIcon.Parent = Card
 
     local Btn = Instance.new("TextButton")
     Btn.Size = UDim2.new(1, 0, 1, 0)
     Btn.BackgroundTransparency = 1
     Btn.Text = ""
+    Btn.ZIndex = 12
     Btn.Parent = Card
 
     local active = false
     Btn.MouseButton1Click:Connect(function()
         active = not active
-        Card.BackgroundColor3 = active and Color3.fromRGB(45, 50, 65) or Color3.fromRGB(30, 30, 35)
+        Card.BackgroundColor3 = active and Color3.fromRGB(35, 42, 53) or Color3.fromRGB(24, 24, 28)
+        if onClickFunc then onClickFunc() end
     end)
 end
 
--- ====================================================================
--- THẢ KHÍT 4 CARD TÍNH NĂNG VÀO NỀN ĐẬM
--- ====================================================================
-createFeatureCard("Freeze Player", "Player freeze in trade", "||", true)
-createFeatureCard("Force Accept", "Player forcing to accept trade", "rbxassetid://6034287535", false)
-createFeatureCard("Auto Gamepass", "Player force to add gamepass if meron", "rbxassetid://6035057415", false)
-createFeatureCard("Check Partner", "Check who you're trading with", "rbxassetid://6034287186", false)
+-- Thay đổi tên thành Player ở các Card thông báo
+createFeatureCard("Freeze Player", "Player freeze in trade", "||", true, 45, function()
+    showNotification("Freeze Player", "Player freeze in trade", "text", "||")
+end)
+
+createFeatureCard("Force Accept", "Player forcing to accept trade", "rbxassetid://6034287535", false, 88, function()
+    showNotification("Trade Success!", "Trade Success with Player!", nil, nil)
+end)
+
+createFeatureCard("Auto Gamepass", "Player force to add gamepass if meron", "rbxassetid://6035057415", false, 131, nil)
+
+createFeatureCard("Check Partner", "Check who you're trading with", "rbxassetid://6034287518", false, 174, nil)
